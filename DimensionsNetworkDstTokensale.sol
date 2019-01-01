@@ -253,32 +253,24 @@ contract MintableToken is StandardToken, Ownable {
 }
 
 contract BlockableToken is Ownable{
-
     event Blocked(address blockedAddress);
     event UnBlocked(address unBlockedAddress);
     //keep mapping of blocked addresses
-    mapping (address => bool) private blockedAddresses;
-
-    //address which can block and unblock an owner from transferring
-    address public adminAddress =  0x78CdaE74D076a85Aa9C7DD602aC73539eB9d4C63;
-
+    mapping (address => bool) public blockedAddresses;
     modifier whenNotBlocked(){
       require(!blockedAddresses[msg.sender]);
       _;
     }
 
-    function blockAddress(address tobeblocked) onlyOwner public {
-      require(msg.sender == adminAddress);
-      blockedAddresses[tobeblocked] = true;
-      emit Blocked(tobeblocked);
+    function blockAddress(address toBeBlocked) onlyOwner public {
+      blockedAddresses[toBeBlocked] = true;
+      emit Blocked(toBeBlocked);
     }
-    function unBlockAddress(address tobeunblocked) onlyOwner public {
-      require(msg.sender == adminAddress);
-      blockedAddresses[tobeunblocked] = false;
-      emit UnBlocked(tobeunblocked);
+    function unBlockAddress(address toBeUnblocked) onlyOwner public {
+      blockedAddresses[toBeUnblocked] = false;
+      emit UnBlocked(toBeUnblocked);
     }
 }
-
 
 
 contract StrikeToken is MintableToken, Pausable, BlockableToken{
@@ -405,20 +397,20 @@ contract StrikeTokenCrowdsale is Ownable, Pausable {
     StrikeToken public token = new StrikeToken();
 
     // start and end times
-    uint256 public startTimestamp = 1538200800;
-    uint256 public endTimestamp = 1546063200;
+    uint256 public startTimestamp = 1575158400;
+    uint256 public endTimestamp = 1577750400;
     uint256 etherToWei = 10**18;
 
     // address where funds are collected and tokens distributed
-    address public hardwareWallet = 0x78CdaE74D076a85Aa9C7DD602aC73539eB9d4C63;
-    address public restrictedWallet = 0x9183F5462ED28D0fF5a79D102571b09D166d83ef;
-    address public additionalTokensFromCommonPoolWallet = 0x598770f5AC8678d5B244Faa7861A08284B5fD38c;
+    address public hardwareWallet = 0xDe3A91E42E9F6955ce1a9eDb23Be4aBf8d2eb08B;
+    address public restrictedWallet = 0xDe3A91E42E9F6955ce1a9eDb23Be4aBf8d2eb08B;
+    address public additionalTokensFromCommonPoolWallet = 0xDe3A91E42E9F6955ce1a9eDb23Be4aBf8d2eb08B;
 
     mapping (address => uint256) public deposits;
     uint256 public numberOfPurchasers;
 
-    // how many bonus tokens given in ICO
-    uint[] private bonus = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    // Percentage bonus tokens given in Token Sale, on a daily basis
+    uint256[] public bonus = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     uint256 public rate = 4800; // 4800 DST is one Ether
 
     // amount of raised money in wei
@@ -462,6 +454,11 @@ contract StrikeTokenCrowdsale is Ownable, Pausable {
     function setRestrictedWallet(address _restrictedWallet) public onlyOwner {
         require(_restrictedWallet != 0x0);
         restrictedWallet = _restrictedWallet;
+    }
+
+    function setAdditionalTokensFromCommonPoolWallet(address _wallet) public onlyOwner {
+        require(_wallet != 0x0);
+        additionalTokensFromCommonPoolWallet = _wallet;
     }
 
     function setHardCapEther(uint256 newEtherAmt) public onlyOwner{
@@ -567,7 +564,14 @@ contract StrikeTokenCrowdsale is Ownable, Pausable {
     function () payable public {
         buyTokens(msg.sender);
     }
-
+    function setRate(uint256 amount) onlyOwner public {
+        require(amount>=0);
+        rate = amount;
+    }
+    function setBonus(uint256 [] amounts) onlyOwner public {
+      require( amounts.length > 30 );
+        bonus = amounts;
+    }
     function setWeiRaisedInPresale(uint256 amount) onlyOwner public {
         require(amount>=0);
         weiRaisedInPresale = amount;
@@ -586,18 +590,23 @@ contract StrikeTokenCrowdsale is Ownable, Pausable {
         token.unpause();
     }
 
+    function smartBlockAddress(address toBeBlocked) onlyOwner public{
+        token.blockAddress(toBeBlocked);
+    }
+    function smartUnBlockAddress(address toBeUnblocked) onlyOwner public{
+        token.unBlockAddress(toBeUnblocked);
+    }
+
     function changeTokenOwner(address newOwner) public onlyOwner {
         require(hasEnded());
         token.changeOwner(newOwner);
     }
-
     function bulkGrantTokenAdvisors(address [] beneficiaries,uint256 [] granttokencounts) public onlyOwner{
       require( beneficiaries.length == granttokencounts.length);
       for (uint256 i=0; i<beneficiaries.length; i++) {
         grantTokensAdvisors(beneficiaries[i],granttokencounts[i]);
       }
     }
-
     function bulkGrantTokenCommonPool(address [] beneficiaries,uint256 [] granttokencounts) public onlyOwner{
       require( beneficiaries.length == granttokencounts.length);
       for (uint256 i=0; i<beneficiaries.length; i++) {
